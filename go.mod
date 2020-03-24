@@ -2,6 +2,8 @@ module github.com/pion/ion
 
 go 1.13
 
+replace github.com/cloudwebrtc/go-protoo => github.com/sean-der/go-protoo v0.0.0-20200324045936-33d1b39bc7e0
+
 require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/at-wat/ebml-go v0.9.2
