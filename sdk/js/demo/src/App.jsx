@@ -230,7 +230,7 @@ class App extends React.Component {
         <Header className="app-header">
           <div className="app-header-left">
             <a href="https://pion.ly" target="_blank">
-              <img src="/pion-logo.svg" className="app-logo-img" />
+              <img src="/Tribe_Talk.png" className="app-logo-img" />
             </a>
           </div>
           {login ? (
@@ -362,7 +362,7 @@ class App extends React.Component {
           ) : loading ? (
             <Spin size="large" tip="Connecting..." />
           ) : (
-                <Card title="Join to Ion" className="app-login-card">
+                <Card title="Join to Talk" className="app-login-card">
                   <LoginForm handleLogin={this._handleJoin} />
                 </Card>
               )}
@@ -371,8 +371,8 @@ class App extends React.Component {
         {!login && (
           <Footer className=".app-footer">
             Powered by{" "}
-            <a href="https://pion.ly" target="_blank">
-              Pion
+            <a href="https://tribehealthsolutions.com" target="_blank">
+              Tribe Core
             </a>{" "}
             WebRTC.
           </Footer>
