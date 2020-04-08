@@ -229,7 +229,7 @@ class App extends React.Component {
       <Layout className="app-layout">
         <Header className="app-header">
           <div className="app-header-left">
-            <a href="https://pion.ly" target="_blank">
+            <a href="https://tribehealthsolutions.com" target="_blank">
               <img src="/Tribe_Talk.png" className="app-logo-img" />
             </a>
           </div>
