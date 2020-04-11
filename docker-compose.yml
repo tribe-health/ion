@@ -2,28 +2,28 @@ version: '3.7'
 
 services:
   web:
-    # build:
-    dockerfile: ./docker/web.Dockerfile
-    #   context: .
-    #  image: pionwebrtc/ion-web:0.1.0
+    build:
+      dockerfile: ./docker/web.Dockerfile
+      context: .
+    image: pionwebrtc/ion-web:0.1.0
     volumes:
       - "./docker/Caddyfile:/etc/Caddyfile"
     ports:
       - 80:80
-      - 443:8080
+      - 8080:8080
       - 8443:8443
     depends_on:
       - biz
     environment:
-    - WWW_URL
-    - ADMIN_EMAIL
+      - WWW_URL
+      - ADMIN_EMAIL
 
   sfu:
-    # build:
-    dockerfile: ./docker/sfu.Dockerfile
-    #   context: .
+    build:
+      dockerfile: ./docker/sfu.Dockerfile
+      context: .
     command: "-c /configs/sfu.toml"
-    #  image: pionwebrtc/ion-sfu:0.1.0
+    image: pionwebrtc/ion-sfu:0.1.0
     volumes:
       - "./docker/sfu.toml:/configs/sfu.toml"
     ports:
@@ -33,10 +33,10 @@ services:
       - etcd
 
   biz:
-    # build:
-    dockerfile: ./docker/biz.Dockerfile
-    #   context: .
-    #  image: pionwebrtc/ion-biz:0.1.0
+    build:
+      dockerfile: ./docker/biz.Dockerfile
+      context: .
+    image: pionwebrtc/ion-biz:0.1.0
     command: "-c /configs/biz.toml"
     volumes:
       - "./docker/biz.toml:/configs/biz.toml"
@@ -45,10 +45,10 @@ services:
       - etcd
 
   islb:
-    # build:
-    dockerfile: ./docker/islb.Dockerfile
-    #   context: .
-    #  image: pionwebrtc/ion-islb:0.1.0
+    build:
+      dockerfile: ./docker/islb.Dockerfile
+      context: .
+    image: pionwebrtc/ion-islb:0.1.0
     command: "-c /configs/islb.toml"
     volumes:
       - "./docker/islb.toml:/configs/islb.toml"
