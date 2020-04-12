@@ -301,7 +301,7 @@ class _MeetingPageState extends State<MeetingPage> {
     _scaffoldkey.currentState.showSnackBar(snackBar);
   }
 
-  Widget _buildLoading() {
+  /*Widget _buildLoading() {
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -320,6 +320,35 @@ class _MeetingPageState extends State<MeetingPage> {
                 color: Colors.white,
                 fontSize: 22.0,
                 fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }*/
+
+  Widget _buildLoading() {
+    return Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(Colors.white),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Waiting for others to join...',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 42.0,
+                  fontWeight: FontWeight.bold
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -519,7 +548,7 @@ class _MeetingPageState extends State<MeetingPage> {
                               margin: EdgeInsets.all(0.0),
                               child: Center(
                                 child: Text(
-                                  'Ion Flutter Demo',
+                                  'Tribe Talk',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18.0,

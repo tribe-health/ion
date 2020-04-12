@@ -12,7 +12,6 @@ class _MySettingsPage extends State<SettingsPage> {
   String _resolution;
   String _bandwidth;
   String _codec;
-  String _displayName;
 
   SharedPreferences _preferences;
   @override
@@ -32,7 +31,6 @@ class _MySettingsPage extends State<SettingsPage> {
     this.setState(() {
       _resolution = _preferences.getString('resolution') ?? 'vga';
       _bandwidth = _preferences.getString('bandwidth') ?? '512';
-      _displayName = _preferences.getString('display_name') ?? 'Guest';
       _codec = _preferences.getString('codec') ?? 'vp8';
     });
   }
@@ -40,7 +38,6 @@ class _MySettingsPage extends State<SettingsPage> {
   void _saveSettings() {
     _preferences.setString('resolution', _resolution);
     _preferences.setString('bandwidth', _bandwidth);
-    _preferences.setString('display_name', _displayName);
     _preferences.setString('codec', _codec);
   }
 
@@ -152,38 +149,6 @@ class _MySettingsPage extends State<SettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: <Widget>[
-                    Column(
-                      children: <Widget>[
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(46.0, 18.0, 48.0, 0),
-                          child: Align(
-                            child: Text('DisplayName:'),
-                            alignment: Alignment.centerLeft,
-                          ),
-                        ),
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(48.0, 0.0, 48.0, 0),
-                          child: TextField(
-                            keyboardType: TextInputType.text,
-                            textAlign: TextAlign.center,
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.all(10.0),
-                              border: UnderlineInputBorder(
-                                  borderSide:
-                                      BorderSide(color: Colors.black12)),
-                              hintText: _displayName,
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                _displayName = value;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
                     Column(
                       children: <Widget>[
                         Padding(

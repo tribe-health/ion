@@ -13,6 +13,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   String _server;
+  String _displayName = "";
   String _roomID;
   SharedPreferences prefs;
 
@@ -26,7 +27,8 @@ class _LoginPageState extends State<LoginPage> {
     IonHelper helper = widget._helper;
     prefs = await SharedPreferences.getInstance();
     setState(() {
-      _server = prefs.getString('server') ?? 'pionion.org';
+      _server = 'talk.tribecore.io';
+      _displayName = prefs.getString('display_name') ?? 'Guest';
       _roomID = prefs.getString('room') ?? 'room1';
     });
 
@@ -36,7 +38,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   handleJoin() async {
+    String displayName = _displayName == null || _displayName.isEmpty ? 'Guest' : _displayName;
     IonHelper helper = widget._helper;
+    prefs.setString('display_name', displayName);
     prefs.setString('server', _server);
     prefs.setString('room', _roomID);
     prefs.commit();
@@ -59,19 +63,19 @@ class _LoginPageState extends State<LoginPage> {
                         contentPadding: EdgeInsets.all(10.0),
                         border: UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.black12)),
-                        hintText: _server ?? 'Enter Ion Server.',
+                        hintText: _displayName ?? 'Enter display name.',
                       ),
                       onChanged: (value) {
                         setState(() {
-                          _server = value;
+                          _displayName = value;
                         });
                       },
                       controller:
                           TextEditingController.fromValue(TextEditingValue(
-                        text: '${this._server == null ? "" : this._server}',
+                        text: this._displayName,
                         selection: TextSelection.fromPosition(TextPosition(
                             affinity: TextAffinity.downstream,
-                            offset: '${this._server}'.length)),
+                            offset: '${this._displayName}'.length)),
                       )))),
               SizedBox(
                   width: 260.0,
@@ -130,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                     builder: (BuildContext context) {
                       return AlertDialog(
                         title: Text('Client id is empty'),
-                        content: Text('Please enter Ion room id!'),
+                        content: Text('Please enter room id!'),
                         actions: <Widget>[
                           FlatButton(
                             child: Text('Ok'),
@@ -153,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
       return Scaffold(
           appBar: orientation == Orientation.portrait
               ? AppBar(
-                  title: Text('PION'),
+                  title: Text('Tribe Talk'),
                 )
               : null,
           body: Stack(children: <Widget>[
