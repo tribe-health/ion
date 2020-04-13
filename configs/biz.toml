@@ -2,7 +2,7 @@
 pprof = ":6060"
 
 # internet ip
-addr = "127.0.0.1"
+addr = "192.168.7.93"
 
 # data center id
 dc = "dc1"

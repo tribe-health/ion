@@ -1,12 +1,12 @@
 * {
-  tls {$ADMIN_EMAIL}
+  tls /etc/cert.pem /etc/key.pem
 }
 
-{$WWW_URL}:8080 {
+:8080 {
   root /app/demo/dist
 }
 
-{$WWW_URL}:8443 {
+:8443 {
   proxy / biz:8443 {
     transparent
     websocket
