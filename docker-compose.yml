@@ -20,6 +20,7 @@ services:
       - etcd
     networks:
       - ionnet
+    restart: always
 
   biz:
     # These are commented out on purpose, when uncommented `docker-compose up` will
@@ -40,6 +41,7 @@ services:
     depends_on:
       - nats
       - etcd
+    restart: always
 
   islb:
     # These are commented out on purpose, when uncommented `docker-compose up` will
@@ -59,11 +61,13 @@ services:
       - redis
     networks:
       - ionnet
+    restart: always
 
   nats:
     image: nats
     networks:
       - ionnet
+    restart: always
 
   etcd:
     image: gcr.io/etcd-development/etcd:v3.4.7
@@ -71,11 +75,13 @@ services:
     command: "--listen-client-urls http://0.0.0.0:2379 --advertise-client-urls http://0.0.0.0:2379"
     networks:
       - ionnet
+    restart: always
 
   redis:
     image: redis:5.0.9
     networks:
       - ionnet
+    restart: always
 
 networks:
   ionnet:
