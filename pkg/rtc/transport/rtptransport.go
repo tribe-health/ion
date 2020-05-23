@@ -4,14 +4,12 @@ import (
 	"crypto/sha1"
 	"errors"
 	"net"
-	"strconv"
-	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/pion/ion/pkg/log"
 	"github.com/pion/ion/pkg/rtc/rtpengine/muxrtp"
 	"github.com/pion/ion/pkg/rtc/rtpengine/muxrtp/mux"
-	"github.com/pion/ion/pkg/util"
 	"github.com/pion/rtcp"
 	"github.com/pion/rtp"
 	"github.com/xtaci/kcp-go"
@@ -19,14 +17,12 @@ import (
 )
 
 const (
-	extSentInit = 30
-	receiveMTU  = 8192
-	maxPktSize  = 1024
+	receiveMTU = 1500
+	maxPktSize = 1024
 )
 
 var (
 	errInvalidConn = errors.New("invalid conn")
-	errInvalidAddr = errors.New("invalid addr")
 )
 
 // RTPTransport ..
@@ -41,13 +37,13 @@ type RTPTransport struct {
 	ssrcPT       map[uint32]uint8
 	ssrcPTLock   sync.RWMutex
 	stop         bool
-	extSent      int
 	id           string
 	idLock       sync.RWMutex
 	writeErrCnt  int
 	rtcpCh       chan rtcp.Packet
 	bandwidth    int
 	shutdownChan chan string
+	IDChan       chan string
 }
 
 func (r *RTPTransport) SetShutdownChan(ch chan string) {
@@ -61,11 +57,11 @@ func NewRTPTransport(conn net.Conn) *RTPTransport {
 		return nil
 	}
 	t := &RTPTransport{
-		conn:    conn,
-		rtpCh:   make(chan *rtp.Packet, maxPktSize),
-		ssrcPT:  make(map[uint32]uint8),
-		extSent: extSentInit,
-		rtcpCh:  make(chan rtcp.Packet, maxPktSize),
+		conn:   conn,
+		rtpCh:  make(chan *rtp.Packet, maxPktSize),
+		ssrcPT: make(map[uint32]uint8),
+		rtcpCh: make(chan rtcp.Packet, maxPktSize),
+		IDChan: make(chan string),
 	}
 	config := mux.Config{
 		Conn:       conn,
@@ -77,12 +73,12 @@ func NewRTPTransport(conn net.Conn) *RTPTransport {
 	var err error
 	t.rtpSession, err = muxrtp.NewSessionRTP(t.rtpEndpoint)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("muxrtp.NewSessionRTP => %s", err.Error())
 		return nil
 	}
 	t.rtcpSession, err = muxrtp.NewSessionRTCP(t.rtcpEndpoint)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("muxrtp.NewSessionRTCP => %s", err.Error())
 		return nil
 	}
 	t.receiveRTP()
@@ -91,19 +87,15 @@ func NewRTPTransport(conn net.Conn) *RTPTransport {
 
 // NewOutRTPTransport new a outgoing RTPTransport
 func NewOutRTPTransport(id, addr string) *RTPTransport {
-	n := strings.Index(addr, ":")
-	if n == 0 {
-		log.Errorf("NewOutRTPTransport err=%v", errInvalidAddr)
+	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
+	dstAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		log.Errorf("net.ResolveUDPAddr => %s", err.Error())
 		return nil
 	}
-	ip := addr[:n]
-	port, _ := strconv.Atoi(addr[n+1:])
-
-	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(ip), Port: port}
 	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("net.DialUDP => %s", err.Error())
 		return nil
 	}
 	r := NewRTPTransport(conn)
@@ -169,19 +161,26 @@ func (r *RTPTransport) newEndpoint(f mux.MatchFunc) *mux.Endpoint {
 func (r *RTPTransport) receiveRTP() {
 	go func() {
 		for {
+			if r.stop {
+				break
+			}
 			readStream, ssrc, err := r.rtpSession.AcceptStream()
-			if err != nil {
+			if err == muxrtp.ErrSessionRTPClosed {
+				r.Close()
+				return
+			} else if err != nil {
 				log.Warnf("Failed to accept stream %v ", err)
 				//for non-blocking ReadRTP()
 				r.rtpCh <- nil
 				continue
 			}
 			go func() {
-				rtpBuf := make([]byte, receiveMTU)
+
 				for {
 					if r.stop {
 						return
 					}
+					rtpBuf := make([]byte, receiveMTU)
 					_, pkt, err := readStream.ReadRTP(rtpBuf)
 					if err != nil {
 						log.Warnf("Failed to read rtp %v %d ", err, ssrc)
@@ -194,7 +193,16 @@ func (r *RTPTransport) receiveRTP() {
 					log.Debugf("RTPTransport.receiveRTP pkt=%v", pkt)
 					r.idLock.Lock()
 					if r.id == "" {
-						r.id = util.GetIDFromRTP(pkt)
+						ext := pkt.GetExtension(1)
+						if ext != nil {
+							uuid, err := uuid.FromBytes(ext)
+							if err != nil {
+								log.Errorf("RTPTransport.receiveRTP error parsing header extension: %+v", err)
+							} else {
+								r.id = uuid.String()
+								r.IDChan <- r.id
+							}
+						}
 					}
 					r.idLock.Unlock()
 
@@ -218,8 +226,13 @@ func (r *RTPTransport) ReadRTP() (*rtp.Packet, error) {
 func (r *RTPTransport) receiveRTCP() {
 	go func() {
 		for {
+			if r.stop {
+				break
+			}
 			readStream, ssrc, err := r.rtcpSession.AcceptStream()
-			if err != nil {
+			if err == muxrtp.ErrSessionRTCPClosed {
+				return
+			} else if err != nil {
 				log.Warnf("Failed to accept RTCP %v ", err)
 				return
 			}
@@ -251,27 +264,45 @@ func (r *RTPTransport) receiveRTCP() {
 	}()
 }
 
+func (r *RTPTransport) setIDHeaderExtension(rtp *rtp.Packet) error {
+	uuid, err := uuid.Parse(r.id)
+	if err != nil {
+		return err
+	}
+	bin, err := uuid.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	err = rtp.SetExtension(1, bin)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // WriteRTP send rtp packet
 func (r *RTPTransport) WriteRTP(rtp *rtp.Packet) error {
 	log.Debugf("RTPTransport.WriteRTP rtp=%v", rtp)
 	writeStream, err := r.rtpSession.OpenWriteStream()
 	if err != nil {
+		log.Errorf("write error %+v", err)
 		r.writeErrCnt++
 		return err
 	}
 
-	if r.extSent > 0 {
+	if rtp.SequenceNumber%10 == 0 {
 		r.idLock.Lock()
-		util.SetIDToRTP(rtp, r.id)
+		err := r.setIDHeaderExtension(rtp)
+		if err != nil {
+			log.Errorf("error setting id to rtp extension %+v", err)
+		}
 		r.idLock.Unlock()
 	}
 
 	_, err = writeStream.WriteRTP(&rtp.Header, rtp.Payload)
-	if err == nil && r.extSent > 0 {
-		r.extSent--
-	}
+
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("writeStream.WriteRTP => %s", err.Error())
 		r.writeErrCnt++
 	}
 	return err

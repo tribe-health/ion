@@ -1,65 +1,68 @@
 package plugins
 
 import (
-	"errors"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/at-wat/ebml-go/webm"
 
 	"github.com/pion/ion/pkg/log"
-	"github.com/pion/rtcp"
 	"github.com/pion/rtp"
-	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v2"
-	"github.com/pion/webrtc/v2/pkg/media/samplebuilder"
 )
 
-var (
-	// ErrCodecNotSupported is returned when a rtp packed it pushed with an unsupported codec
-	ErrCodecNotSupported = errors.New("codec not supported")
-)
-
-type WebmSaver struct {
-	id                             string
-	audioWriter, videoWriter       webm.BlockWriteCloser
-	audioBuilder, videoBuilder     *samplebuilder.SampleBuilder
-	audioTimestamp, videoTimestamp uint32
+// WebmSaverConfig .
+type WebmSaverConfig struct {
+	ID   string
+	MID  string
+	On   bool
+	Path string
 }
 
-func NewWebmSaver(id string) *WebmSaver {
+// WebmSaver Module for saving rtp streams to webm
+type WebmSaver struct {
+	id                             string
+	mid                            string
+	path                           string
+	audioWriter, videoWriter       webm.BlockWriteCloser
+	audioTimestamp, videoTimestamp uint32
+	outRTPChan                     chan *rtp.Packet
+}
+
+// NewWebmSaver Initialize a new webm saver
+func NewWebmSaver(config WebmSaverConfig) *WebmSaver {
 	return &WebmSaver{
-		id:           id,
-		audioBuilder: samplebuilder.New(10, &codecs.OpusPacket{}),
-		videoBuilder: samplebuilder.New(10, &codecs.VP8Packet{}),
+		id:         config.ID,
+		mid:        config.MID,
+		path:       config.Path,
+		outRTPChan: make(chan *rtp.Packet, maxSize),
 	}
 }
 
+// ID WebmSaver id
 func (s *WebmSaver) ID() string {
 	return s.id
 }
 
-func (s *WebmSaver) Init(...interface{}) {
-}
-
-func (s *WebmSaver) PushRTP(pkt *rtp.Packet) error {
+// WriteRTP Write RTP packet to webmsaver
+func (s *WebmSaver) WriteRTP(pkt *rtp.Packet) error {
 	if pkt.PayloadType == webrtc.DefaultPayloadTypeVP8 {
-		s.PushVP8(pkt)
+		s.pushVP8(pkt)
 	} else if pkt.PayloadType == webrtc.DefaultPayloadTypeOpus {
-		s.PushOpus(pkt)
+		s.pushOpus(pkt)
 	}
-	return ErrCodecNotSupported
-}
-
-func (s *WebmSaver) PushRTCP(rtcp.Packet) error {
+	s.outRTPChan <- pkt
 	return nil
 }
 
-func (s *WebmSaver) Stop() {
-	s.Close()
+// ReadRTP Forward rtp packet which from pub
+func (s *WebmSaver) ReadRTP() <-chan *rtp.Packet {
+	return s.outRTPChan
 }
 
-func (s *WebmSaver) Close() {
+// Stop Close the WebmSaver
+func (s *WebmSaver) Stop() {
 	fmt.Printf("Finalizing webm...\n")
 	if s.audioWriter != nil {
 		if err := s.audioWriter.Close(); err != nil {
@@ -72,59 +75,48 @@ func (s *WebmSaver) Close() {
 		}
 	}
 }
-func (s *WebmSaver) PushOpus(rtpPacket *rtp.Packet) {
-	s.audioBuilder.Push(rtpPacket)
 
-	for {
-		sample, timestamp := s.audioBuilder.PopWithTimestamp()
-		if sample == nil {
-			return
+func (s *WebmSaver) pushOpus(pkt *rtp.Packet) {
+	if s.audioWriter != nil {
+		if s.audioTimestamp == 0 {
+			s.audioTimestamp = pkt.Timestamp
 		}
-		if s.audioWriter != nil {
-			if s.audioTimestamp == 0 {
-				s.audioTimestamp = timestamp
-			}
-			t := (timestamp - s.audioTimestamp) / 48
-			if _, err := s.audioWriter.Write(true, int64(t), sample.Data); err != nil {
-				panic(err)
-			}
+		t := (pkt.Timestamp - s.audioTimestamp) / 48
+		if _, err := s.audioWriter.Write(true, int64(t), pkt.Payload); err != nil {
+			panic(err)
 		}
 	}
 }
-func (s *WebmSaver) PushVP8(rtpPacket *rtp.Packet) {
-	s.videoBuilder.Push(rtpPacket)
 
-	for {
-		sample, timestamp := s.videoBuilder.PopWithTimestamp()
-		if sample == nil {
-			return
-		}
-		// Read VP8 header.
-		videoKeyframe := (sample.Data[0]&0x1 == 0)
-		if videoKeyframe {
-			// Keyframe has frame information.
-			raw := uint(sample.Data[6]) | uint(sample.Data[7])<<8 | uint(sample.Data[8])<<16 | uint(sample.Data[9])<<24
-			width := int(raw & 0x3FFF)
-			height := int((raw >> 16) & 0x3FFF)
+func (s *WebmSaver) pushVP8(pkt *rtp.Packet) {
+	// Read VP8 header.
+	videoKeyframe := (pkt.Payload[0]&0x1 == 0)
 
-			if s.videoWriter == nil || s.audioWriter == nil {
-				// Initialize WebM saver using received frame size.
-				s.InitWriter(width, height)
-			}
+	if videoKeyframe {
+		// Keyframe has frame information.
+		raw := uint(pkt.Payload[6]) | uint(pkt.Payload[7])<<8 | uint(pkt.Payload[8])<<16 | uint(pkt.Payload[9])<<24
+		width := int(raw & 0x3FFF)
+		height := int((raw >> 16) & 0x3FFF)
+
+		if s.videoWriter == nil || s.audioWriter == nil {
+			// Initialize WebM saver using received frame size.
+			s.initWriter(width, height)
 		}
-		if s.videoWriter != nil {
-			if s.videoTimestamp == 0 {
-				s.videoTimestamp = timestamp
-			}
-			t := (timestamp - s.videoTimestamp) / 90
-			if _, err := s.videoWriter.Write(videoKeyframe, int64(t), sample.Data); err != nil {
-				panic(err)
-			}
+	}
+
+	if s.videoWriter != nil {
+		if s.videoTimestamp == 0 {
+			s.videoTimestamp = pkt.Timestamp
+		}
+		t := (pkt.Timestamp - s.videoTimestamp) / 90
+		if _, err := s.videoWriter.Write(videoKeyframe, int64(t), pkt.Payload); err != nil {
+			panic(err)
 		}
 	}
 }
-func (s *WebmSaver) InitWriter(width, height int) {
-	w, err := os.OpenFile("test.webm", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+
+func (s *WebmSaver) initWriter(width, height int) {
+	w, err := os.OpenFile(path.Join(s.path, fmt.Sprintf("%s.webm", s.mid)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		panic(err)
 	}

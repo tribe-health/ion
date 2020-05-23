@@ -22,27 +22,34 @@ type Plugin interface {
 }
 
 const (
-	TypeJitterBuffer = "JitterBuffer"
-	TypeRTPForwarder = "RTPForwarder"
+	TypeJitterBuffer  = "JitterBuffer"
+	TypeRTPForwarder  = "RTPForwarder"
+	TypeSampleBuilder = "SampleBuilder"
+	TypeWebmSaver     = "WebmSaver"
 
 	maxSize = 100
 )
 
 type Config struct {
-	On           bool
-	JitterBuffer JitterBufferConfig
-	RTPForwarder RTPForwarderConfig
+	On            bool
+	JitterBuffer  JitterBufferConfig
+	RTPForwarder  RTPForwarderConfig
+	SampleBuilder SampleBuilderConfig
+	WebmSaver     WebmSaverConfig
 }
 
 type PluginChain struct {
+	mid        string
 	plugins    []Plugin
 	pluginLock sync.RWMutex
 	stop       bool
 	config     Config
 }
 
-func NewPluginChain() *PluginChain {
-	return &PluginChain{}
+func NewPluginChain(mid string) *PluginChain {
+	return &PluginChain{
+		mid: mid,
+	}
 }
 
 func (p *PluginChain) ReadRTP() *rtp.Packet {
@@ -75,6 +82,14 @@ func CheckPlugins(config Config) error {
 		oneOn = true
 	}
 
+	if config.SampleBuilder.On {
+		oneOn = true
+	}
+
+	if config.WebmSaver.On {
+		oneOn = true
+	}
+
 	if !oneOn {
 		return errInvalidPlugins
 	}
@@ -97,7 +112,21 @@ func (p *PluginChain) Init(config Config) error {
 	if config.RTPForwarder.On {
 		log.Infof("PluginChain.Init config.RTPForwarder.On=true config=%v", config.RTPForwarder)
 		config.RTPForwarder.ID = TypeRTPForwarder
+		config.RTPForwarder.MID = p.mid
 		p.AddPlugin(TypeRTPForwarder, NewRTPForwarder(config.RTPForwarder))
+	}
+
+	if config.SampleBuilder.On {
+		log.Infof("PluginChain.Init config.SampleBuilder.On=true config=%v", config.SampleBuilder)
+		config.SampleBuilder.ID = TypeSampleBuilder
+		p.AddPlugin(TypeSampleBuilder, NewSampleBuilder(config.SampleBuilder))
+	}
+
+	if config.WebmSaver.On {
+		log.Infof("PluginChain.Init config.WebmSaver.On=true config=%v", config.WebmSaver)
+		config.WebmSaver.ID = TypeWebmSaver
+		config.WebmSaver.MID = p.mid
+		p.AddPlugin(TypeWebmSaver, NewWebmSaver(config.WebmSaver))
 	}
 
 	// forward packets along plugin chain
@@ -106,8 +135,13 @@ func (p *PluginChain) Init(config Config) error {
 			continue
 		}
 		go func(i int, plugin Plugin) {
+			if p.stop {
+				return
+			}
+
 			for pkt := range p.plugins[i-1].ReadRTP() {
 				err := plugin.WriteRTP(pkt)
+
 				if err != nil {
 					log.Errorf("Plugin Forward Packet error => %+v", err)
 				}
@@ -130,6 +164,12 @@ func (p *PluginChain) AttachPub(pub transport.Transport) {
 	if jitterBuffer != nil {
 		log.Infof("PluginChain.AttachPub pub=%+v", pub)
 		jitterBuffer.(*JitterBuffer).AttachPub(pub)
+	}
+
+	sampleBuilder := p.GetPlugin(TypeSampleBuilder)
+	if sampleBuilder != nil {
+		log.Infof("PluginChain.AttachPub pub=%+v", pub)
+		sampleBuilder.(*SampleBuilder).AttachPub(pub)
 	}
 }
 

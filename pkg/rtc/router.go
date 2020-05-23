@@ -40,7 +40,7 @@ func NewRouter(id string) *Router {
 	return &Router{
 		subs:          make(map[string]transport.Transport),
 		liveTime:      time.Now().Add(liveCycle),
-		pluginChain:   plugins.NewPluginChain(),
+		pluginChain:   plugins.NewPluginChain(id),
 		subChans:      make(map[string]chan *rtp.Packet),
 		subShutdownCh: make(chan string, 1),
 	}
@@ -82,7 +82,7 @@ func (r *Router) start() {
 					continue
 				}
 			}
-			// log.Infof("pkt := <-r.subCh %v", pkt)
+			// log.Debugf("pkt := <-r.subCh %v", pkt)
 			if pkt == nil {
 				continue
 			}
@@ -306,5 +306,5 @@ func (r *Router) ReSendRTP(sid string, ssrc uint32, sn uint16) bool {
 
 // Alive return router status
 func (r *Router) Alive() bool {
-	return !r.liveTime.Before(time.Now())
+	return r.liveTime.After(time.Now())
 }

@@ -187,11 +187,12 @@ func NewWebRTCTransport(id string, options map[string]interface{}) *WebRTCTransp
 	})
 
 	w.pc.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		if connectionState == webrtc.ICEConnectionStateDisconnected {
+		switch connectionState {
+		case webrtc.ICEConnectionStateDisconnected:
 			log.Errorf("webrtc ice disconnected")
+		case webrtc.ICEConnectionStateFailed:
+			log.Errorf("webrtc ice failed")
 			w.alive = false
-
-			// Trigger cleanup
 			w.shutdownChan <- id
 		}
 	})
@@ -379,7 +380,7 @@ func (w *WebRTCTransport) WriteRTP(pkt *rtp.Packet) error {
 	log.Debugf("WebRTCTransport.WriteRTP pkt=%v", pkt)
 	err := track.WriteRTP(pkt)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("WebRTCTransport.WriteRTP => %s", err.Error())
 		w.writeErrCnt++
 		return err
 	}

@@ -1,10 +1,16 @@
 package muxrtp
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
 	"github.com/pion/rtp"
+)
+
+var (
+	// ErrSessionRTPClosed is returned when a RTP session has been closed
+	ErrSessionRTPClosed = errors.New("SessionRTP has been closed")
 )
 
 type SessionRTP struct {
@@ -58,7 +64,7 @@ func (s *SessionRTP) OpenReadStream(SSRC uint32) (*ReadStreamRTP, error) {
 func (s *SessionRTP) AcceptStream() (*ReadStreamRTP, uint32, error) {
 	stream, ok := <-s.newStream
 	if !ok {
-		return nil, 0, fmt.Errorf("SessionRTP has been closed")
+		return nil, 0, ErrSessionRTPClosed
 	}
 
 	readStream, ok := stream.(*ReadStreamRTP)
@@ -89,6 +95,7 @@ func (s *SessionRTP) writeRTP(header *rtp.Header, payload []byte) (int, error) {
 	if _, ok := <-s.session.started; ok {
 		return 0, fmt.Errorf("started channel used incorrectly, should only be closed")
 	}
+
 	p := rtp.Packet{Header: *header, Payload: payload}
 	bin, err := p.Marshal()
 	if err != nil {
