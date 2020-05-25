@@ -9,13 +9,14 @@ import (
 )
 
 var (
-	cfg     = config{}
-	Global  = &cfg.Global
-	Plugins = &cfg.Plugins
-	Rtp     = &cfg.Rtp
-	Log     = &cfg.Log
-	Etcd    = &cfg.Etcd
-	Nats    = &cfg.Nats
+	cfg      = config{}
+	Global   = &cfg.Global
+	Pipeline = &cfg.Pipeline
+	Elements = &cfg.Elements
+	Rtp      = &cfg.Rtp
+	Log      = &cfg.Log
+	Etcd     = &cfg.Etcd
+	Nats     = &cfg.Nats
 )
 
 func init() {
@@ -32,20 +33,22 @@ type global struct {
 }
 
 type samplebuilder struct {
-	On           bool   `mapstructure:"on"`
 	AudioMaxLate uint16 `mapstructure:"audiomaxlate"`
 	VideoMaxLate uint16 `mapstructure:"videomaxlate"`
 }
 
-type webmsaver struct {
-	On   bool   `mapstructure:"on"`
-	Path string `mapstructure:"path"`
+type pipeline struct {
+	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`
 }
 
-type plugins struct {
-	On            bool          `mapstructure:"on"`
-	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`
-	WebmSaver     webmsaver     `mapstructure:"webmsaver"`
+type webmsaver struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	DefaultOn bool   `mapstructure:"defaulton"`
+	Path      string `mapstructure:"path"`
+}
+
+type elements struct {
+	WebmSaver webmsaver `mapstructure:"webmsaver"`
 }
 
 type log struct {
@@ -67,13 +70,14 @@ type rtp struct {
 }
 
 type config struct {
-	Global  global  `mapstructure:"global"`
-	Plugins plugins `mapstructure:"plugins"`
-	Rtp     rtp     `mapstructure:"rtp"`
-	Log     log     `mapstructure:"log"`
-	Etcd    etcd    `mapstructure:"etcd"`
-	Nats    nats    `mapstructure:"nats"`
-	CfgFile string
+	Global   global   `mapstructure:"global"`
+	Pipeline pipeline `mapstructure:"pipeline"`
+	Elements elements `mapstructure:"elements"`
+	Rtp      rtp      `mapstructure:"rtp"`
+	Log      log      `mapstructure:"log"`
+	Etcd     etcd     `mapstructure:"etcd"`
+	Nats     nats     `mapstructure:"nats"`
+	CfgFile  string
 }
 
 func showHelp() {
