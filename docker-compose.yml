@@ -7,10 +7,10 @@ services:
     # and execute `docker-compose build && docker-compose push`
     #
     build:
-       dockerfile: ./docker/sfu.Dockerfile
-       context: .
+      dockerfile: ./docker/sfu.Dockerfile
+      context: .
     command: "-c /configs/sfu.toml"
-    # image: pionwebrtc/ion-sfu:latest
+    # image: pionwebrtc/ion-sfu:0.2.0
     volumes:
       - "./docker/sfu.toml:/configs/sfu.toml"
     ports:
@@ -30,7 +30,7 @@ services:
     build:
       dockerfile: ./docker/biz.Dockerfile
       context: .
-    # image: pionwebrtc/ion-biz:latest
+    # image: pionwebrtc/ion-biz:0.2.0
     command: "-c /configs/biz.toml"
     volumes:
       - "./docker/biz.toml:/configs/biz.toml"
@@ -51,7 +51,7 @@ services:
     build:
       dockerfile: ./docker/islb.Dockerfile
       context: .
-    # image: pionwebrtc/ion-islb:latest
+    # image: pionwebrtc/ion-islb:0.2.0
     command: "-c /configs/islb.toml"
     volumes:
       - "./docker/islb.toml:/configs/islb.toml"
@@ -62,25 +62,6 @@ services:
     networks:
       - ionnet
     restart: always
-
-  avp:
-    # These are commented out on purpose, when uncommented `docker-compose up` will
-    # execute build instead of pulling from Dockerhub. When ready to build new images uncomment
-    # and execute `docker-compose build && docker-compose push`
-    #
-    # build:
-    #   dockerfile: ./docker/avp.Dockerfile
-    #   context: .
-    command: "-c /configs/avp.toml"
-    image: pionwebrtc/ion-avp:latest
-    volumes:
-      - "./docker/avp.toml:/configs/avp.toml"
-      - "./:/out/"
-    depends_on:
-      - nats
-      - etcd
-    networks:
-      - ionnet
 
   nats:
     image: nats
