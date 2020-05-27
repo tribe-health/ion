@@ -1,10 +1,6 @@
 dist: bionic
 language: go
 
-branches:
-  only:
-    - master
-
 env:
   global:
     - GO111MODULE=on
@@ -44,50 +40,53 @@ _build_avp_docker_job: &build_avp_docker_job
   script:
     - echo "TRAVIS_TAG= $TRAVIS_TAG"
     - docker build --tag pionwebrtc/ion-avp:latest -f ./docker/avp.Dockerfile .
-    - if [ -n "$TRAVIS_TAG" ]; then docker tag pionwebrtc/ion-avp:latest pionwebrtc/ion-avp:"$TRAVIS_TAG"; fi
   before_deploy:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag pionwebrtc/ion-avp:latest pionwebrtc/ion-avp:"$TRAVIS_TAG"
   deploy:
     provider: script
-    script: if [ -n "$TRAVIS_TAG" ]; then docker push pionwebrtc/ion-avp:latest && docker push pionwebrtc/ion-avp:"$TRAVIS_TAG"; else docker push pionwebrtc/ion-avp:latest; fi
+    script: docker push pionwebrtc/ion-avp:latest && docker push pionwebrtc/ion-avp:"$TRAVIS_TAG"
     on:
-      branch: master
+      tags: true
 
 _build_biz_docker_job: &build_biz_docker_job
   env: CACHE_NAME=build_biz_docker
   script:
-    - docker build --tag pionwebrtc/ion-biz:"$VERSION" -f ./docker/biz.Dockerfile .
+    - docker build --tag pionwebrtc/ion-biz:latest -f ./docker/biz.Dockerfile .
   before_deploy:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag pionwebrtc/ion-biz:latest pionwebrtc/ion-biz:"$TRAVIS_TAG"
   deploy:
     provider: script
-    script: docker push pionwebrtc/ion-biz:"$VERSION"
+    script: docker push pionwebrtc/ion-biz:latest && docker push pionwebrtc/ion-biz:"$TRAVIS_TAG"
     on:
-      branch: master
+      tags: true
 
 _build_islb_docker_job: &build_islb_docker_job
   env: CACHE_NAME=build_islb_docker
   script:
-    - docker build --tag pionwebrtc/ion-islb:"$VERSION" -f ./docker/islb.Dockerfile .
+    - docker build --tag pionwebrtc/ion-islb:latest -f ./docker/islb.Dockerfile .
   before_deploy:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag pionwebrtc/ion-islb:latest pionwebrtc/ion-islb:"$TRAVIS_TAG"
   deploy:
     provider: script
-    script: docker push pionwebrtc/ion-islb:"$VERSION"
+    script: docker push pionwebrtc/ion-islb:latest && docker push pionwebrtc/ion-islb:"$TRAVIS_TAG"
     on:
-      branch: master
+      tags: true
 
 _build_sfu_docker_job: &build_sfu_docker_job
   env: CACHE_NAME=build_sfu_docker
   script:
-    - docker build --tag pionwebrtc/ion-sfu:"$VERSION" -f ./docker/sfu.Dockerfile .
+    - docker build --tag pionwebrtc/ion-sfu:latest -f ./docker/sfu.Dockerfile .
   before_deploy:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag pionwebrtc/ion-sfu:latest pionwebrtc/ion-sfu:"$TRAVIS_TAG"
   deploy:
     provider: script
-    script: docker push pionwebrtc/ion-sfu:"$VERSION"
+    script: docker push pionwebrtc/ion-sfu:latest && docker push pionwebrtc/ion-sfu:"$TRAVIS_TAG"
     on:
-      branch: master
+      tags: true
 
 _test_job: &test_job
   env: CACHE_NAME=test
@@ -138,26 +137,35 @@ jobs:
     - <<: *lint_job
       name: Lint 1.14
       go: 1.14
+      if: branch = master OR tag IS present
     - <<: *build_job
       name: Build 1.13
       go: 1.13
+      if: branch = master OR tag IS present
     - <<: *build_job
       name: Build 1.14
       go: 1.14
+      if: branch = master OR tag IS present
     - <<: *test_job
       name: Test 1.13
       go: 1.13
+      if: branch = master OR tag IS present
     - <<: *test_job
       name: Test 1.14
       go: 1.14
+      if: branch = master OR tag IS present
     - <<: *build_avp_docker_job
       name: Build avp docker
+      if: branch = master OR tag IS present
     - <<: *build_biz_docker_job
       name: Build biz docker
+      if: branch = master OR tag IS present
     - <<: *build_islb_docker_job
       name: Build islb docker
+      if: branch = master OR tag IS present
     - <<: *build_sfu_docker_job
       name: Build sfu docker
+      if: branch = master OR tag IS present
     # - <<: *test_i386_job
     #   name: Test i386 1.13
     #   env: GO_VERSION=1.13
