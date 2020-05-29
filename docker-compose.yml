@@ -64,7 +64,7 @@ services:
     restart: always
 
   avp:
-    image: pionwebrtc/ion-avp:latest
+    # image: pionwebrtc/ion-avp:latest
     build:
       dockerfile: ./docker/avp.Dockerfile
       context: .
