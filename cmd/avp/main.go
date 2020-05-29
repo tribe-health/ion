@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	_ "net/http/pprof"
 
@@ -8,32 +9,43 @@ import (
 	"github.com/pion/ion/pkg/discovery"
 	"github.com/pion/ion/pkg/log"
 	"github.com/pion/ion/pkg/node/avp"
-	"github.com/pion/ion/pkg/node/avp/elements"
-	"github.com/pion/ion/pkg/node/avp/pipeline"
-	"github.com/pion/ion/pkg/node/avp/pipeline/samplebuilder"
-	"github.com/pion/ion/pkg/rtc"
+	"github.com/pion/ion/pkg/process"
+	"github.com/pion/ion/pkg/process/elements"
+	"github.com/pion/ion/pkg/process/samples"
+	"github.com/pion/ion/pkg/proto"
 )
+
+func getDefaultElements(id string) map[string]elements.Element {
+	de := make(map[string]elements.Element)
+	if conf.Pipeline.WebmSaver.Enabled && conf.Pipeline.WebmSaver.DefaultOn {
+		webm := elements.NewWebmSaver(id)
+		de[elements.TypeWebmSaver] = webm
+	}
+	return de
+}
+
+func getTogglableElement(msg proto.ElementInfo) (elements.Element, error) {
+	switch msg.Type {
+	case elements.TypeWebmSaver:
+		return elements.NewWebmSaver(msg.MID), nil
+	}
+
+	return nil, errors.New("element not found")
+}
 
 func init() {
 	log.Init(conf.Log.Level)
-	if err := rtc.InitRTP(conf.Rtp.Port, conf.Rtp.KcpKey, conf.Rtp.KcpSalt); err != nil {
+	if err := process.InitRTP(conf.Rtp.Port, conf.Rtp.KcpKey, conf.Rtp.KcpSalt); err != nil {
 		panic(err)
 	}
 
-	pipelineConfig := pipeline.Config{
-		SampleBuilder: samplebuilder.Config{
+	process.InitPipeline(process.Config{
+		SampleBuilder: samples.BuilderConfig{
 			AudioMaxLate: conf.Pipeline.SampleBuilder.AudioMaxLate,
 			VideoMaxLate: conf.Pipeline.SampleBuilder.VideoMaxLate,
 		},
-	}
-
-	pipeline.Init(pipelineConfig)
-
-	elements.Init(elements.Configs{
-		WebmSaver: elements.WebmSaverConfig{
-			DefaultOn: conf.Elements.WebmSaver.DefaultOn,
-			Path:      conf.Elements.WebmSaver.Path,
-		},
+		GetDefaultElements:  getDefaultElements,
+		GetTogglableElement: getTogglableElement,
 	})
 }
 

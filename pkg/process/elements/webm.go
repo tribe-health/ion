@@ -8,6 +8,10 @@ import (
 	"github.com/at-wat/ebml-go/webm"
 
 	"github.com/pion/ion/pkg/log"
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+	"github.com/pion/ion/pkg/node/avp/pipeline/samplebuilder"
+	"github.com/pion/webrtc/v2"
+=======
 	"github.com/pion/ion/pkg/process/samples"
 )
 
@@ -18,12 +22,19 @@ const (
 
 var (
 	config WebmSaverConfig
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 )
 
 // WebmSaverConfig .
 type WebmSaverConfig struct {
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+	ID        string
+	MID       string
+	Enabled   bool
+=======
 	Enabled   bool
 	Togglable bool
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 	DefaultOn bool
 	Path      string
 }
@@ -34,31 +45,57 @@ type WebmSaver struct {
 	path                           string
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+=======
 }
 
 // InitWebmSaver sets initial config
 func InitWebmSaver(c WebmSaverConfig) {
 	config = c
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 }
 
 // NewWebmSaver Initialize a new webm saver
 func NewWebmSaver(id string) *WebmSaver {
 	return &WebmSaver{
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+		id:   config.ID,
+		mid:  config.MID,
+=======
 		id:   id,
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 		path: config.Path,
 	}
 }
 
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+// ID WebmSaver id
+func (s *WebmSaver) ID() string {
+	return s.id
+}
+
+// Write sample to webmsaver
+func (s *WebmSaver) Write(sample *samplebuilder.Sample) error {
+	if sample.Type == webrtc.DefaultPayloadTypeVP8 {
+		s.pushVP8(sample)
+	} else if sample.Type == webrtc.DefaultPayloadTypeOpus {
+=======
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *samples.Sample) error {
 	if sample.Type == samples.TypeVP8 {
 		s.pushVP8(sample)
 	} else if sample.Type == samples.TypeOpus {
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 		s.pushOpus(sample)
 	}
 	return nil
 }
 
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+// Close Close the WebmSaver
+func (s *WebmSaver) Close() {
+	fmt.Printf("Finalizing webm...\n")
+=======
 func (s *WebmSaver) Read() <-chan *samples.Sample {
 	return nil
 }
@@ -66,6 +103,7 @@ func (s *WebmSaver) Read() <-chan *samples.Sample {
 // Close Close the WebmSaver
 func (s *WebmSaver) Close() {
 	log.Infof("WebmSaver.Close() => %s", s.id)
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 	if s.audioWriter != nil {
 		if err := s.audioWriter.Close(); err != nil {
 			panic(err)
@@ -78,7 +116,11 @@ func (s *WebmSaver) Close() {
 	}
 }
 
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+func (s *WebmSaver) pushOpus(sample *samplebuilder.Sample) {
+=======
 func (s *WebmSaver) pushOpus(sample *samples.Sample) {
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 	if s.audioWriter != nil {
 		if s.audioTimestamp == 0 {
 			s.audioTimestamp = sample.Timestamp
@@ -90,7 +132,11 @@ func (s *WebmSaver) pushOpus(sample *samples.Sample) {
 	}
 }
 
+<<<<<<< HEAD:pkg/node/avp/elements/webm.go
+func (s *WebmSaver) pushVP8(sample *samplebuilder.Sample) {
+=======
 func (s *WebmSaver) pushVP8(sample *samples.Sample) {
+>>>>>>> upstream/master:pkg/process/elements/webm.go
 	// Read VP8 header.
 	videoKeyframe := (sample.Payload[0]&0x1 == 0)
 

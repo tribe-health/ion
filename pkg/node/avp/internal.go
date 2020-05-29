@@ -3,19 +3,12 @@ package avp
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	nprotoo "github.com/cloudwebrtc/nats-protoo"
 	"github.com/pion/ion/pkg/log"
-	"github.com/pion/ion/pkg/node/avp/pipeline"
+	"github.com/pion/ion/pkg/process"
 	"github.com/pion/ion/pkg/proto"
-	"github.com/pion/ion/pkg/rtc"
 	"github.com/pion/ion/pkg/util"
-)
-
-var (
-	pipelines    = make(map[string]*pipeline.Pipeline)
-	pipelineLock sync.RWMutex
 )
 
 func handleRequest(rpcID string) {
@@ -25,7 +18,8 @@ func handleRequest(rpcID string) {
 		data := json.RawMessage(request["data"].([]byte))
 		log.Debugf("handleRequest: method => %s, data => %v", method, data)
 
-		var proc proto.ProcessInfo
+		var proc proto.ElementInfo
+
 		if err := json.Unmarshal(data, &proc); err != nil {
 			reject(400, "Marshal error")
 			return
@@ -36,9 +30,9 @@ func handleRequest(rpcID string) {
 
 		switch method {
 		case proto.AVPProcess:
-			result, err = process(proc)
+			result, err = startProcess(proc)
 		case proto.AVPUnprocess:
-			result, err = unprocess(proc)
+			result, err = endProcess(proc)
 		}
 
 		if err != nil {
@@ -49,22 +43,17 @@ func handleRequest(rpcID string) {
 	})
 }
 
-func process(msg proto.ProcessInfo) (map[string]interface{}, *nprotoo.Error) {
-	log.Infof("process msg=%v", msg)
-	router := rtc.GetOrNewRouter(msg.MID)
-	if router == nil {
-		return nil, util.NewNpError(404, "process: router not found.")
+func startProcess(einfo proto.ElementInfo) (map[string]interface{}, *nprotoo.Error) {
+	log.Infof("process einfo=%v", einfo)
+	pipeline := process.GetPipeline(einfo.MID)
+	if pipeline == nil {
+		return nil, util.NewNpError(404, "process: pipeline not found")
 	}
-	// subID := uuid.New().String()
-	// proc, err := processors.GetProcessor(msg.Processor, msg.ClientConfig)
-	// if err != nil {
-	// 	return nil, util.NewNpError(404, "process: invalid processor.")
-	// }
-	// router.AddSub(subID, proc)
+	pipeline.AddElement(einfo)
 	return util.Map(), nil
 }
 
-func unprocess(msg proto.ProcessInfo) (map[string]interface{}, *nprotoo.Error) {
+func endProcess(msg proto.ElementInfo) (map[string]interface{}, *nprotoo.Error) {
 	log.Infof("publish unprocess=%v", msg)
 	return util.Map(), nil
 }

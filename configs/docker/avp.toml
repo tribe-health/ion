@@ -11,8 +11,9 @@ audiomaxlate = 100
 # max late for video rtp packets
 videomaxlate = 200
 
-[elements.webmsaver]
+[pipeline.webmsaver]
 enabled = true
+togglable = true
 defaulton = true
 # webm output path
 path = "./out/"
