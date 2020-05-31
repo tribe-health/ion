@@ -242,8 +242,13 @@ github.com/pion/srtp v1.3.3 h1:8bjs9YaSNvSrbH0OfKxzPX+PTrCyAC2LoT9Qesugi+U=
 github.com/pion/srtp v1.3.3/go.mod h1:jNe0jmIOqksuurR9S/7yoKDalfPeluUFrNPCBqI4FOI=
 github.com/pion/stun v0.3.3 h1:brYuPl9bN9w/VM7OdNzRSLoqsnwlyNvD9MVeJrHjDQw=
 github.com/pion/stun v0.3.3/go.mod h1:xrCld6XM+6GWDZdvjPlLMsTU21rNxnO6UO8XsAvHr/M=
+<<<<<<< HEAD
 github.com/pion/stun v0.3.4-0.20200529085629-068b9e389ca2 h1:mF12/0EWqCZ7bMmM68li6TBBCt5NPx/bARvevdUZimc=
 github.com/pion/stun v0.3.4-0.20200529085629-068b9e389ca2/go.mod h1:gDMim+47EeEtfWogA37n6qXZS88L5V6LqFcf+DZA2UA=
+=======
+github.com/pion/stun v0.3.5 h1:uLUCBCkQby4S1cf6CGuR9QrVOKcvUwFeemaC865QHDg=
+github.com/pion/stun v0.3.5/go.mod h1:gDMim+47EeEtfWogA37n6qXZS88L5V6LqFcf+DZA2UA=
+>>>>>>> upstream/master
 github.com/pion/transport v0.6.0/go.mod h1:iWZ07doqOosSLMhZ+FXUTq+TamDoXSllxpbGcfkCmbE=
 github.com/pion/transport v0.8.10/go.mod h1:tBmha/UCjpum5hqTWhfAEs3CO4/tHSg0MYRhSzR+CZ8=
 github.com/pion/transport v0.10.0 h1:9M12BSneJm6ggGhJyWpDveFOstJsTiQjkLf4M44rm80=
