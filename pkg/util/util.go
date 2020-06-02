@@ -14,12 +14,26 @@ import (
 	nprotoo "github.com/cloudwebrtc/nats-protoo"
 	"github.com/pion/ion/pkg/log"
 	"github.com/pion/stun"
-	"github.com/pion/webrtc/v2"
 )
 
 var (
 	localIPPrefix = [...]string{"192.168", "10.0", "169.254", "172.16"}
 )
+
+// KvOK check flag and value
+func KvOK(m map[string]interface{}, k, v string) bool {
+	str := ""
+	val, ok := m[k]
+	if ok {
+		str, ok = val.(string)
+		if ok {
+			if strings.EqualFold(str, v) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 func IsLocalIP(ip string) bool {
 	for i := 0; i < len(localIPPrefix); i++ {
@@ -194,15 +208,6 @@ func GetLostSN(begin, bitmap uint16) []uint16 {
 
 func GetMills() int64 {
 	return time.Now().UnixNano() / 1e6
-}
-
-func IsVideo(pt uint8) bool {
-	if pt == webrtc.DefaultPayloadTypeVP8 ||
-		pt == webrtc.DefaultPayloadTypeVP9 ||
-		pt == webrtc.DefaultPayloadTypeH264 {
-		return true
-	}
-	return false
 }
 
 func StrToUint8(str string) uint8 {
