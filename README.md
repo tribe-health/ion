@@ -9,6 +9,13 @@
 
 <br />
 
+## ❤️Sponsor to help this awsome project go faster！🚀
+(https://opencollective.com/pion-ion)
+
+You can vote for feature if you are a sponsor.
+
+Features: https://github.com/pion/ion/projects/1
+
 ## Quick-Start (*LOCALHOST ONLY*)
 
 *NOTE:* Do not attempt to run this example on a VPS. Make sure you [read the docs](docs/production); WebRTC requires some specific network configuration for the SFU service (depending on your host), and the JavaScript `GetUserMedia()` API can only request camera access on pages with SSL (or `localhost`). If you are not running on `localhost`, you MUST configure networking for SFU and enable HTTPS for `ion-app-web`.
@@ -72,7 +79,7 @@ For dev and more options see the wiki
 
 ## Maintainers
 
-<a href="https://github.com/adwpc"><img width="60" height="60" src="https://github.com/adwpc.png?size=500"/></a><a href="https://github.com/cloudwebrtc"><img width="60" height="60" src="https://github.com/cloudwebrtc.png?size=500"/></a><a href="https://github.com/kangshaojun"><img width="60" height="60" src="https://github.com/kangshaojun.png?size=500"/></a><a href="https://github.com/tarrencev"><img width="60" height="60" src="https://github.com/tarrencev.png?size=500"/></a><a href="https://github.com/jbrady42"><img width="60" height="60" src="https://github.com/jbrady42.png?size=500"/></a>
+<a href="https://github.com/adwpc"><img width="60" height="60" src="https://github.com/adwpc.png?size=500"/></a><a href="https://github.com/cloudwebrtc"><img width="60" height="60" src="https://github.com/cloudwebrtc.png?size=500"/></a><a href="https://github.com/kangshaojun"><img width="60" height="60" src="https://github.com/kangshaojun.png?size=500"/></a><a href="https://github.com/tarrencev"><img width="60" height="60" src="https://github.com/tarrencev.png?size=500"/></a><a href="https://github.com/jbrady42"><img width="60" height="60" src="https://github.com/jbrady42.png?size=500"/></a><a href="https://github.com/leewardbound"><img width="60" height="60" src="https://github.com/leewardbound.png?size=500"/></a>
 
 ## Contributors
 
