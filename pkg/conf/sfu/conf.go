@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pion/ion/pkg/rtc"
+	sfu "github.com/pion/ion-sfu/pkg"
+	"github.com/pion/ion-sfu/pkg/log"
 	"github.com/spf13/viper"
 )
 
@@ -14,15 +15,13 @@ const (
 )
 
 var (
-	cfg     = config{}
-	Global  = &cfg.Global
-	Plugins = &cfg.Plugins
-	WebRTC  = &cfg.WebRTC
-	Rtp     = &cfg.Rtp
-	Log     = &cfg.Log
-	Etcd    = &cfg.Etcd
-	Nats    = &cfg.Nats
-	Router  = &cfg.Router
+	cfg    = config{}
+	Global = &cfg.Global
+	WebRTC = &cfg.WebRTC
+	Router = &cfg.Router
+	Log    = &cfg.Log
+	Etcd   = &cfg.Etcd
+	Nats   = &cfg.Nats
 )
 
 func init() {
@@ -39,32 +38,6 @@ type global struct {
 	// TestIP []string `mapstructure:"testip"`
 }
 
-type JitterBuffer struct {
-	On            bool `mapstructure:"on"`
-	TCCOn         bool `mapstructure:"tccon"`
-	REMBCycle     int  `mapstructure:"rembcycle"`
-	PLICycle      int  `mapstructure:"plicycle"`
-	MaxBandwidth  int  `mapstructure:"maxbandwidth"`
-	MaxBufferTime int  `mapstructure:"maxbuffertime"`
-}
-
-type RTPForwarder struct {
-	On      bool   `mapstructure:"on"`
-	Addr    string `mapstructure:"addr"`
-	KcpKey  string `mapstructure:"kcpkey"`
-	KcpSalt string `mapstructure:"kcpsalt"`
-}
-
-type plugins struct {
-	On           bool         `mapstructure:"on"`
-	JitterBuffer JitterBuffer `mapstructure:"jitterbuffer"`
-	RTPForwarder RTPForwarder `mapstructure:"rtpforwarder"`
-}
-
-type log struct {
-	Level string `mapstructure:"level"`
-}
-
 type etcd struct {
 	Addrs []string `mapstructure:"addrs"`
 }
@@ -73,30 +46,11 @@ type nats struct {
 	URL string `mapstructure:"url"`
 }
 
-type iceserver struct {
-	URLs       []string `mapstructure:"urls"`
-	Username   string   `mapstructure:"username"`
-	Credential string   `mapstructure:"credential"`
-}
-
-type webrtc struct {
-	ICEPortRange []uint16    `mapstructure:"portrange"`
-	ICEServers   []iceserver `mapstructure:"iceserver"`
-}
-
-type rtp struct {
-	Port    int    `mapstructure:"port"`
-	KcpKey  string `mapstructure:"kcpkey"`
-	KcpSalt string `mapstructure:"kcpsalt"`
-}
-
 type config struct {
 	Global  global           `mapstructure:"global"`
-	Router  rtc.RouterConfig `mapstructure:"router"`
-	Plugins plugins          `mapstructure:"plugins"`
-	WebRTC  webrtc           `mapstructure:"webrtc"`
-	Rtp     rtp              `mapstructure:"rtp"`
-	Log     log              `mapstructure:"log"`
+	WebRTC  sfu.WebRTCConfig `mapstructure:"webrtc"`
+	Router  sfu.RouterConfig `mapstructure:"router"`
+	Log     log.Config       `mapstructure:"log"`
 	Etcd    etcd             `mapstructure:"etcd"`
 	Nats    nats             `mapstructure:"nats"`
 	CfgFile string

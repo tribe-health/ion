@@ -16,35 +16,44 @@ const (
 	ClientUnSubscribe = "unsubscribe"
 	ClientBroadcast   = "broadcast"
 	ClientTrickleICE  = "trickle"
+	ClientOffer       = "offer"
+	ClientAnswer      = "answer"
 
 	// ion to client
 	ClientOnJoin         = "peer-join"
 	ClientOnLeave        = "peer-leave"
 	ClientOnStreamAdd    = "stream-add"
 	ClientOnStreamRemove = "stream-remove"
+	ClientOnOffer        = "offer"
+	ClientOnAnswer       = "answer"
+
+	SignalClose = "signal-close"
 
 	// ion to islb
-	IslbFindService  = "findService"
-	IslbGetPubs      = "getPubs"
-	IslbGetMediaInfo = "getMediaInfo"
-	IslbRelay        = "relay"
-	IslbUnrelay      = "unRelay"
+	IslbFindSfu = "findSfu"
+	IslbRelay   = "relay"
+	IslbUnrelay = "unRelay"
 
-	IslbKeepAlive      = "keepAlive"
-	IslbClientOnJoin   = ClientOnJoin
-	IslbClientOnLeave  = ClientOnLeave
-	IslbOnStreamAdd    = ClientOnStreamAdd
-	IslbOnStreamRemove = ClientOnStreamRemove
-	IslbOnBroadcast    = ClientBroadcast
+	IslbKeepAlive = "keepAlive"
+	IslbPeerJoin  = ClientOnJoin
+	IslbPeerLeave = ClientOnLeave
+	IslbListMids  = "list-mids"
+	IslbStreamAdd = ClientOnStreamAdd
+	IslbBroadcast = ClientBroadcast
 
 	// SFU Endpoints
-	SFUTrickleICE   = ClientTrickleICE
-	SFUStreamRemove = ClientOnStreamRemove
+	SfuTrickleICE    = ClientTrickleICE
+	SfuClientJoin    = ClientJoin
+	SfuClientOffer   = ClientOnOffer
+	SfuClientAnswer  = ClientOnAnswer
+	SfuClientTrickle = ClientTrickleICE
+	SfuClientLeave   = ClientLeave
 
 	IslbID = "islb"
 )
 
 type MID string
+type SID string
 type RID string
 type UID string
 
@@ -113,7 +122,11 @@ type UserInfo struct {
 }
 
 func (u UserInfo) BuildKey() string {
-	strs := []string{u.DC, string(u.RID), "user", "info", string(u.UID)}
+	uid := string(u.UID)
+	if uid == "" {
+		uid = "*"
+	}
+	strs := []string{u.DC, string(u.RID), "user", "info", uid}
 	return strings.Join(strs, "/")
 }
 
