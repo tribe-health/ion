@@ -92,6 +92,12 @@ type ClientTrickleMsg struct {
 	Candidate webrtc.ICECandidateInit `json:"candidate"`
 }
 
+type FromClientLeaveMsg struct {
+	UID UID `json:"uid"`
+	RID RID `json:"rid"`
+	MID MID `json:"mid"`
+}
+
 type FromClientBroadcastMsg struct {
 	RID  RID             `json:"rid"`
 	Info json.RawMessage `json:"info"`
@@ -100,11 +106,6 @@ type FromClientBroadcastMsg struct {
 type ToClientBroadcastMsg struct {
 	RoomInfo
 	Info json.RawMessage `json:"info"`
-}
-
-// Signal to biz
-type SignalCloseMsg struct {
-	RoomInfo
 }
 
 // Biz to SFU
@@ -122,12 +123,6 @@ type FromSfuJoinMsg struct {
 }
 
 type ToSfuLeaveMsg struct {
-	UID UID `json:"uid"`
-	RID RID `json:"rid"`
-	MID MID `json:"mid"`
-}
-
-type FromSfuLeaveMsg struct {
 	UID UID `json:"uid"`
 	RID RID `json:"rid"`
 	MID MID `json:"mid"`
@@ -186,13 +181,14 @@ type FromIslbStreamAddMsg struct {
 	Stream Stream `json:"stream"`
 }
 
-type ToIslbFindSfuMsg struct {
-	UID UID `json:"uid"`
-	RID RID `json:"rid"`
-	MID MID `json:"mid"`
+type ToIslbFindNodeMsg struct {
+	Service string
+	UID     UID `json:"uid"`
+	RID     RID `json:"rid"`
+	MID     MID `json:"mid"`
 }
 
-type FromIslbFindSfuMsg struct {
+type FromIslbFindNodeMsg struct {
 	RPCID   string
 	EventID string
 	ID      string

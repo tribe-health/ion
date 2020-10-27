@@ -77,7 +77,6 @@ func Entry(method string, peer *signal.Peer, msg json.RawMessage, accept signal.
 	var result interface{}
 	topErr := util.NewNpError(http.StatusBadRequest, fmt.Sprintf("Unkown method [%s]", method))
 
-	//TODO DRY this up
 	switch method {
 	case proto.ClientJoin:
 		var msgData proto.FromClientJoinMsg
@@ -89,6 +88,11 @@ func Entry(method string, peer *signal.Peer, msg json.RawMessage, accept signal.
 		if topErr = ParseProtoo(msg, peer.Claims(), &msgData); topErr == nil {
 			result, topErr = offer(peer, msgData)
 		}
+	case proto.ClientAnswer:
+		var msgData proto.ClientNegotiationMsg
+		if topErr = ParseProtoo(msg, peer.Claims(), &msgData); topErr == nil {
+			result, topErr = answer(peer, msgData)
+		}
 	case proto.ClientTrickleICE:
 		var msgData proto.ClientTrickleMsg
 		if topErr = ParseProtoo(msg, peer.Claims(), &msgData); topErr == nil {
@@ -99,10 +103,10 @@ func Entry(method string, peer *signal.Peer, msg json.RawMessage, accept signal.
 		if topErr = ParseProtoo(msg, peer.Claims(), &msgData); topErr == nil {
 			result, topErr = broadcast(peer, msgData)
 		}
-	case proto.SignalClose:
-		var msgData proto.SignalCloseMsg
+	case proto.ClientLeave:
+		var msgData proto.FromClientLeaveMsg
 		if topErr = ParseProtoo(msg, peer.Claims(), &msgData); topErr == nil {
-			result, topErr = close(peer, msgData)
+			result, topErr = leave(peer, msgData)
 		}
 	}
 
