@@ -47,11 +47,13 @@ const (
 	SfuClientTrickle = ClientTrickleICE
 	SfuClientLeave   = ClientLeave
 
+	// avp
+	AvpProcess = "avp-process"
+
 	IslbID = "islb"
 )
 
 type MID string
-type SID string
 type RID string
 type UID string
 

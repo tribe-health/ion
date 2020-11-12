@@ -1,10 +1,43 @@
 package proto
 
 import (
+	"encoding/gob"
 	"encoding/json"
 
 	"github.com/pion/webrtc/v3"
 )
+
+func init() {
+	gob.Register(&FromClientJoinMsg{})
+	gob.Register(&ToClientJoinMsg{})
+	gob.Register(&ToClientPeerJoinMsg{})
+	gob.Register(&ClientOfferMsg{})
+	gob.Register(&ClientAnswerMsg{})
+	gob.Register(&ClientTrickleMsg{})
+	gob.Register(&FromClientLeaveMsg{})
+	gob.Register(&FromClientBroadcastMsg{})
+	gob.Register(&ToClientBroadcastMsg{})
+
+	gob.Register(&ToSfuJoinMsg{})
+	gob.Register(&FromSfuJoinMsg{})
+	gob.Register(&ToSfuLeaveMsg{})
+	gob.Register(&SfuTrickleMsg{})
+	gob.Register(&SfuOfferMsg{})
+	gob.Register(&SfuAnswerMsg{})
+
+	gob.Register(&ToAvpProcessMsg{})
+
+	gob.Register(&IslbBroadcastMsg{})
+	gob.Register(&ToIslbPeerJoinMsg{})
+	gob.Register(&FromIslbPeerJoinMsg{})
+	gob.Register(&IslbPeerLeaveMsg{})
+	gob.Register(&ToIslbStreamAddMsg{})
+	gob.Register(&FromIslbStreamAddMsg{})
+	gob.Register(&ToIslbFindNodeMsg{})
+	gob.Register(&FromIslbFindNodeMsg{})
+	gob.Register(&ToIslbListMids{})
+	gob.Register(&FromIslbListMids{})
+}
 
 type Authenticatable interface {
 	Room() RID
@@ -31,22 +64,6 @@ type Stream struct {
 
 type RTCInfo struct {
 	Jsep webrtc.SessionDescription `json:"jsep"`
-}
-
-type PublishOptions struct {
-	Codec       string `json:"codec"`
-	Resolution  string `json:"resolution"`
-	Bandwidth   int    `json:"bandwidth"`
-	Audio       bool   `json:"audio"`
-	Video       bool   `json:"video"`
-	Screen      bool   `json:"screen"`
-	TransportCC bool   `json:"transportCC,omitempty"`
-	Description string `json:"description,omitempty"`
-}
-
-type SubscribeOptions struct {
-	Bandwidth   int  `json:"bandwidth"`
-	TransportCC bool `json:"transportCC"`
 }
 
 type TrackMap map[string][]TrackInfo
@@ -80,7 +97,13 @@ type ToClientPeerJoinMsg struct {
 	Info json.RawMessage `json:"info"`
 }
 
-type ClientNegotiationMsg struct {
+type ClientOfferMsg struct {
+	RID RID `json:"rid"`
+	MID MID `json:"mid"`
+	RTCInfo
+}
+
+type ClientAnswerMsg struct {
 	RID RID `json:"rid"`
 	MID MID `json:"mid"`
 	RTCInfo
@@ -111,10 +134,9 @@ type ToClientBroadcastMsg struct {
 // Biz to SFU
 
 type ToSfuJoinMsg struct {
-	UID UID `json:"uid"`
-	RID RID `json:"rid"`
-	MID MID `json:"mid"`
-	SID SID `json:"sid"`
+	RPCID string `json:"rpc"`
+	RID   RID    `json:"rid"`
+	MID   MID    `json:"mid"`
 	RTCInfo
 }
 
@@ -123,23 +145,34 @@ type FromSfuJoinMsg struct {
 }
 
 type ToSfuLeaveMsg struct {
-	UID UID `json:"uid"`
-	RID RID `json:"rid"`
 	MID MID `json:"mid"`
 }
 
 type SfuTrickleMsg struct {
-	UID       UID                     `json:"uid"`
-	RID       RID                     `json:"rid"`
 	MID       MID                     `json:"mid"`
 	Candidate webrtc.ICECandidateInit `json:"candidate"`
 }
 
-type SfuNegotiationMsg struct {
-	UID UID `json:"uid"`
-	RID RID `json:"rid"`
+type SfuOfferMsg struct {
 	MID MID `json:"mid"`
 	RTCInfo
+}
+
+type SfuAnswerMsg struct {
+	MID MID `json:"mid"`
+	RTCInfo
+}
+
+// Biz to AVP
+
+// ToAvpProcessMsg .
+type ToAvpProcessMsg struct {
+	Addr   string `json:"Addr"`
+	PID    string `json:"pid"`
+	RID    string `json:"rid"`
+	TID    string `json:"tid"`
+	EID    string `json:"eid"`
+	Config []byte `json:"config"`
 }
 
 // Islb messages
@@ -159,7 +192,6 @@ type ToIslbPeerJoinMsg struct {
 type FromIslbPeerJoinMsg struct {
 	Peers   []Peer   `json:"peers"`
 	Streams []Stream `json:"streams"`
-	SID     SID      `json:"sid"`
 }
 
 type IslbPeerLeaveMsg struct {
@@ -189,11 +221,7 @@ type ToIslbFindNodeMsg struct {
 }
 
 type FromIslbFindNodeMsg struct {
-	RPCID   string
-	EventID string
-	ID      string
-	Name    string
-	Service string
+	ID string
 }
 
 type ToIslbListMids struct {
@@ -205,10 +233,21 @@ type FromIslbListMids struct {
 	MIDs []MID `json:"mids"`
 }
 
-type GetSFURPCParams struct {
-	RPCID   string
-	EventID string
-	ID      string
-	Name    string
-	Service string
+// CandidateForJSON for json.Marshal() => browser
+func CandidateForJSON(c webrtc.ICECandidateInit) webrtc.ICECandidateInit {
+	if c.SDPMid == nil {
+		c.SDPMid = refString("0")
+	}
+	if c.SDPMLineIndex == nil {
+		c.SDPMLineIndex = refUint16(0)
+	}
+	return c
+}
+
+func refString(s string) *string {
+	return &s
+}
+
+func refUint16(i uint16) *uint16 {
+	return &i
 }

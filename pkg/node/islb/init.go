@@ -1,11 +1,13 @@
 package islb
 
 import (
+	"sync"
 	"time"
 
-	nprotoo "github.com/cloudwebrtc/nats-protoo"
+	"github.com/nats-io/nats.go"
 	"github.com/pion/ion/pkg/db"
 	"github.com/pion/ion/pkg/discovery"
+	"github.com/pion/ion/pkg/proto"
 )
 
 const (
@@ -13,22 +15,81 @@ const (
 )
 
 var (
-	dc = "default"
-	//nolint:unused
-	nid         = "islb-unkown-node-id"
-	protoo      *nprotoo.NatsProtoo
-	redis       *db.Redis
-	services    map[string]discovery.Node
-	broadcaster *nprotoo.Broadcaster
-	)
+	dc       string
+	nid      string
+	bid      string
+	nrpc     *proto.NatsRPC
+	sub      *nats.Subscription
+	redis    *db.Redis
+	nodes    map[string]discovery.Node
+	nodeLock sync.RWMutex
+	serv     *discovery.Service
+)
 
-// Init func
-func Init(dcID, nodeID, rpcID, eventID string, redisCfg db.Config, etcd []string, natsURL string) {
+// Init islb
+func Init(dcID string, etcdAddrs []string, natsURLs string, redisConf db.Config) error {
+	var err error
+
 	dc = dcID
-	nid = nodeID
-	redis = db.NewRedis(redisCfg)
-	protoo = nprotoo.NewNatsProtoo(natsURL)
-	broadcaster = protoo.NewBroadcaster(eventID)
-	services = make(map[string]discovery.Node)
-	handleRequest(rpcID)
+	nodes = make(map[string]discovery.Node)
+
+	if nrpc, err = proto.NewNatsRPC(natsURLs); err != nil {
+		return err
+	}
+
+	redis = db.NewRedis(redisConf)
+
+	if serv, err = discovery.NewService("islb", dcID, etcdAddrs); err != nil {
+		return err
+	}
+	nid = serv.NID()
+	bid = nid + "-event"
+	serv.Watch("", watchNodes)
+	serv.KeepAlive()
+
+	if sub, err = handleRequest(nid); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// watchNodes watch nodes
+func watchNodes(state discovery.State, node discovery.Node) {
+	nodeLock.Lock()
+	defer nodeLock.Unlock()
+
+	id := node.ID()
+	if state == discovery.NodeUp {
+		if _, found := nodes[id]; !found {
+			nodes[id] = node
+		}
+	} else if state == discovery.NodeDown {
+		if _, found := nodes[id]; found {
+			delete(nodes, id)
+		}
+	}
+}
+
+func getNodes() map[string]discovery.Node {
+	nodeLock.RLock()
+	defer nodeLock.RUnlock()
+
+	return nodes
+}
+
+// Close all
+func Close() {
+	if sub != nil {
+		sub.Unsubscribe()
+	}
+	if nrpc != nil {
+		nrpc.Close()
+	}
+	if redis != nil {
+		redis.Close()
+	}
+	if serv != nil {
+		serv.Close()
+	}
 }

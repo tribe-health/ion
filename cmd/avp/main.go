@@ -1,100 +1,46 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/spf13/viper"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"path"
+	"os/signal"
+	"syscall"
 
-	grpc "github.com/pion/ion-avp/cmd/server/grpc"
-	. "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/elements"
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
+	conf "github.com/pion/ion/pkg/conf/avp"
+	"github.com/pion/ion/pkg/node/avp"
 )
 
-var (
-	conf = Config{}
-	file string
-	addr string
-)
-
-func createWebmSaver(sid, pid, tid string, config []byte) Element {
-	filewriter := elements.NewFileWriter(elements.FileWriterConfig{
-		ID:   pid,
-		Path: path.Join(conf.Pipeline.WebmSaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)),
-	})
-	webm := elements.NewWebmSaver(elements.WebmSaverConfig{
-		ID: pid,
-	})
-	err := webm.Attach(filewriter)
-	if err != nil {
-		log.Errorf("error attaching filewriter to webm %s", err)
-		return nil
-	}
-	return webm
-}
-
-func showHelp() {
-	fmt.Printf("Usage:%s {params}\n", os.Args[0])
-	fmt.Println("      -c {config file}")
-	fmt.Println("      -a {listen addr}")
-	fmt.Println("      -h (show help info)")
-}
-
-func load() bool {
-	_, err := os.Stat(file)
-	if err != nil {
-		return false
-	}
-
-	viper.SetConfigFile(file)
-	viper.SetConfigType("toml")
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		fmt.Printf("config file %s read failed. %v\n", file, err)
-		return false
-	}
-	err = viper.GetViper().Unmarshal(&conf)
-	if err != nil {
-		fmt.Printf("config file %s loaded failed. %v\n", file, err)
-		return false
-	}
-
-	fmt.Printf("config %s load ok!\n", file)
-	return true
-}
-
-func parse() bool {
-	flag.StringVar(&file, "c", "configs/avp.toml", "config file")
-	flag.StringVar(&addr, "a", ":50051", "address to use")
-	help := flag.Bool("h", false, "help info")
-	flag.Parse()
-	if !load() {
-		return false
-	}
-
-	if *help {
-		showHelp()
-		return false
-	}
-	return true
+func init() {
+	fixByFile := []string{"asm_amd64.s", "proc.go", "icegatherer.go"}
+	fixByFunc := []string{}
+	log.Init(conf.Avp.Log.Level, fixByFile, fixByFunc)
 }
 
 func main() {
-	if !parse() {
-		showHelp()
-		os.Exit(-1)
+	log.Infof("--- Starting AVP Node ---")
+
+	if conf.Global.Pprof != "" {
+		go func() {
+			log.Infof("Start pprof on %s", conf.Global.Pprof)
+			err := http.ListenAndServe(conf.Global.Pprof, nil)
+			if err != nil {
+				log.Errorf("http.ListenAndServe err=%v", err)
+			}
+		}()
 	}
 
-	log.Init(conf.Log.Level)
+	if err := avp.Init(conf.Global.Dc, conf.Etcd.Addrs, conf.Nats.URL, conf.Avp); err != nil {
+		log.Errorf("avp init error: %v", err)
+	}
+	defer avp.Close()
 
-	log.Infof("--- Starting AVP Node ---")
-	registry := NewRegistry()
-	registry.AddElement("webmsaver", createWebmSaver)
-	Init(registry)
-	grpc.NewServer(addr, conf)
-	select {}
+	// Press Ctrl+C to exit the process
+	ch := make(chan os.Signal)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	select {
+	case <-ch:
+		return
+	}
 }

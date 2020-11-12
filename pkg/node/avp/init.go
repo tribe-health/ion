@@ -1,4 +1,4 @@
-package sfu
+package avp
 
 import (
 	"github.com/nats-io/nats.go"
@@ -14,17 +14,17 @@ var (
 	serv *discovery.Service
 )
 
-// Init sfu
-func Init(dcID string, etcdAddrs []string, natsURLs string) error {
-	var err error
-
+// Init avp
+func Init(dcID string, etcdAddrs []string, natsURLs string, avpConf *Config) error {
 	dc = dcID
+
+	var err error
 
 	if nrpc, err = proto.NewNatsRPC(natsURLs); err != nil {
 		return err
 	}
 
-	if serv, err = discovery.NewService("sfu", dcID, etcdAddrs); err != nil {
+	if serv, err = discovery.NewService("avp", dcID, etcdAddrs); err != nil {
 		return err
 	}
 	nid = serv.NID()
@@ -33,6 +33,8 @@ func Init(dcID string, etcdAddrs []string, natsURLs string) error {
 	if sub, err = handleRequest(nid); err != nil {
 		return err
 	}
+
+	initAVP(avpConf)
 
 	return nil
 }

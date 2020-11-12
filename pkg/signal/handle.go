@@ -10,7 +10,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
-	"github.com/pion/ion/pkg/log"
+	log "github.com/pion/ion-log"
 	"github.com/pion/ion/pkg/proto"
 	"github.com/pion/ion/pkg/util"
 )
@@ -100,13 +100,13 @@ func in(transport *transport.WebSocketTransport, request *http.Request) {
 		for _, r := range rooms {
 			// only remove if its the same peer. If newer peer joined before the cleanup, leave it.
 			if r.GetPeer(peer.ID()) == peer {
-				if code > 1000 {
-					msgStr, _ := json.Marshal(proto.FromClientLeaveMsg{
-						UID: proto.UID(peer.ID()),
-						RID: r.ID(),
-					})
-					bizCall(proto.ClientLeave, peer, msgStr, accept, reject)
-				}
+				//if code > 1000 {
+				msgStr, _ := json.Marshal(proto.FromClientLeaveMsg{
+					UID: proto.UID(peer.ID()),
+					RID: r.ID(),
+				})
+				bizCall(proto.ClientLeave, peer, msgStr, accept, reject)
+				//}
 				log.Infof("signal.in handleClose delete peer (%s) from room (%s)", peer.ID(), r.ID())
 				r.DelPeer(peer.ID())
 			}

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pion/ion/pkg/log"
+	log "github.com/pion/ion-log"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -64,6 +64,15 @@ func NewRedis(c Config) *Redis {
 	r.cluster.Do("CONFIG", "SET", "notify-keyspace-events", "AKE")
 	r.clusterMode = true
 	return r
+}
+
+func (r *Redis) Close() {
+	if r.single != nil {
+		r.single.Close()
+	}
+	if r.cluster != nil {
+		r.cluster.Close()
+	}
 }
 
 func (r *Redis) Set(k, v string, t time.Duration) error {
